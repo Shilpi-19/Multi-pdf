@@ -42,7 +42,7 @@ Follow these steps to set up the project:
 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/pdf-chat-assistant.git
+git clone [https://github.com/yourusername/pdf-chat-assistant.git](https://github.com/Anonymous3017/multiple-pdf-chat-app.git)
 cd pdf-chat-assistant
 ```
 
