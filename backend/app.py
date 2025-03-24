@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Add this import
-from database import init_db, save_message, save_pdf_upload, get_messages, get_pdf_uploads, get_all_chat_history_ids, delete_session
+from database import init_db, save_message, save_pdf_upload, get_messages, get_pdf_uploads, get_all_chat_history_ids, delete_session,save_session_name
 from pdf_processor import process_pdfs
 from ai_utils import ask_question
 import os
@@ -47,15 +47,27 @@ def upload_pdfs(session_id):
         return jsonify({'message': f'{len(pdf_files)} document(s) processed'})
     return jsonify({'error': 'No text extracted from PDFs'}), 400
 
+@app.route('/sessions/<session_id>/message', methods=['POST'])
+def save_message_route(session_id):
+    data = request.get_json()
+    content = data.get('content')
+    sender = data.get('sender')
+    
+    if not content or not sender:
+        return jsonify({'error': 'Content and sender are required'}), 400
+    
+    save_message(session_id, sender, 'text', content)
+    return jsonify({'success': True})
+
 @app.route('/sessions/<session_id>/ask', methods=['POST'])
 def ask_question_route(session_id):
     data = request.get_json()
     question = data.get('question')
     if not question:
         return jsonify({'error': 'No question provided'}), 400
+    
+    # Only generate the answer, don't save messages here
     answer = ask_question(session_id, question)
-    save_message(session_id, 'user', 'text', question)
-    save_message(session_id, 'assistant', 'text', answer)
     return jsonify({'answer': answer})
 
 @app.route('/sessions/<session_id>/messages', methods=['GET'])
@@ -63,36 +75,33 @@ def get_messages_route(session_id):
     messages = get_messages(session_id)
     return jsonify(messages)
 
-@app.route('/sessions/<session_id>/pdfs', methods=['GET'])
-def get_pdfs_route(session_id):
-    pdfs = get_pdf_uploads(session_id)
-    return jsonify(pdfs)
-
-@app.route('/sessions/<session_id>/rename', methods=['PUT'])
+@app.route('/sessions/<session_id>/rename', methods=['POST', 'PUT'])
 def rename_session(session_id):
-    new_name = request.json.get('new_name')
+    data = request.json
+    new_name = data.get('new_name')
+    
     if not new_name:
         return jsonify({'error': 'New name is required'}), 400
     
     # Add validation to prevent duplicate names
     sessions = get_all_chat_history_ids()
-    if new_name in sessions:
+    existing_names = [session['name'] for session in sessions]
+    if new_name in existing_names:
         return jsonify({'error': 'Session name already exists'}), 409
     
-    # Rename the session (you'll need to implement this function)
     try:
-        # Rename associated files/directories
-        old_index_path = f"faiss_index_{session_id.replace(':', '-')}"
-        new_index_path = f"faiss_index_{new_name}"
-        if os.path.exists(old_index_path):
-            os.rename(old_index_path, new_index_path)
-        
-        # Update any other session-related data
-        # ... (implement according to your storage mechanism)
+        # Keep the original session_id for the FAISS index
+        # Only update the display name in the database
+        save_session_name(session_id, new_name)
         
         return jsonify({'success': True, 'new_name': new_name})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/sessions/<session_id>/pdfs', methods=['GET'])
+def get_pdfs_route(session_id):
+    pdfs = get_pdf_uploads(session_id)
+    return jsonify(pdfs)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

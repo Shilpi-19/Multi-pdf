@@ -23,9 +23,32 @@ def init_db():
         pdf_name TEXT NOT NULL,
         upload_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS session_names (
+        chat_history_id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    );                     
     """)
     conn.commit()
     conn.close()
+
+def save_session_name(chat_history_id, display_name):
+    conn = get_db_connection()
+    conn.execute(
+        'INSERT OR REPLACE INTO session_names (chat_history_id, display_name) VALUES (?, ?)',
+        (chat_history_id, display_name)
+    )
+    conn.commit()
+    conn.close()   
+
+def get_session_name(chat_history_id):
+    conn = get_db_connection()
+    result = conn.execute(
+        'SELECT display_name FROM session_names WHERE chat_history_id = ?',
+        (chat_history_id,)
+    ).fetchone()
+    conn.close()
+    return result['display_name'] if result else None     
 
 def save_message(chat_history_id, sender_type, message_type, text_content):
     conn = get_db_connection()
@@ -67,18 +90,23 @@ def get_all_chat_history_ids():
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT DISTINCT chat_history_id FROM messages
-        UNION
-        SELECT DISTINCT chat_history_id FROM pdf_uploads
-        ORDER BY chat_history_id DESC
+        SELECT DISTINCT m.chat_history_id, COALESCE(sn.display_name, m.chat_history_id) as display_name
+        FROM (
+            SELECT DISTINCT chat_history_id FROM messages
+            UNION
+            SELECT DISTINCT chat_history_id FROM pdf_uploads
+        ) m
+        LEFT JOIN session_names sn ON m.chat_history_id = sn.chat_history_id
+        ORDER BY m.chat_history_id DESC
     """)
-    ids = [row[0] for row in cursor.fetchall()]
+    results = cursor.fetchall()
     conn.close()
-    return ids
+    return [{'id': row[0], 'name': row[1]} for row in results]
 
 def delete_session(chat_history_id):
     conn = get_db_connection()
     conn.execute('DELETE FROM messages WHERE chat_history_id = ?', (chat_history_id,))
     conn.execute('DELETE FROM pdf_uploads WHERE chat_history_id = ?', (chat_history_id,))
+    conn.execute('DELETE FROM session_names WHERE chat_history_id = ?', (chat_history_id,))
     conn.commit()
     conn.close()

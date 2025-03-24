@@ -18,11 +18,31 @@ function ChatInterface({ sessionId, chatHistory, onNewMessage }) {
 
   const handleAsk = async () => {
     if (!question.trim() || isLoading) return;
+    
+    const userMessage = question;
+    setQuestion('');
+    
     try {
+      // First API call - Save user's message
+      await axios.post(`/sessions/${sessionId}/message`, { 
+        content: userMessage,
+        sender: 'user'
+      });
+      onNewMessage('user', userMessage);
+      
+      // Then start loading and get bot's response
       setIsLoading(true);
-      const response = await axios.post(`/sessions/${sessionId}/ask`, { question });
-      setQuestion('');
-      onNewMessage();
+      const response = await axios.post(`/sessions/${sessionId}/ask`, { 
+        question: userMessage 
+      });
+      
+      // Save and display bot's response
+      await axios.post(`/sessions/${sessionId}/message`, {
+        content: response.data.answer,
+        sender: 'assistant'
+      });
+      onNewMessage('assistant', response.data.answer);
+      
     } catch (error) {
       alert(error.response?.data.error || 'Error processing question');
     } finally {

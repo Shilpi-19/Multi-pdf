@@ -18,8 +18,12 @@ function App() {
   }, []);
 
   const fetchSessions = async () => {
-    const response = await axios.get('/sessions');
-    setSessions(response.data);
+    try {
+      const response = await axios.get('/sessions');
+      setSessions(response.data);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    }
   };
 
   const createNewSession = async () => {
@@ -49,27 +53,16 @@ function App() {
     }
   };
 
-  const renameSession = async (oldName, newName) => {
-  try {
-    const response = await axios.put(`/sessions/${oldName}/rename`, {
-      new_name: newName
-    });
-    
-    if (response.data.success) {
-      // Update the sessions list
-      setSessions(sessions.map(session => 
-        session === oldName ? newName : session
-      ));
-      // Update current session if it's the one being renamed
-      if (currentSession === oldName) {
-        setCurrentSession(newName);
-      }
+  const renameSession = async (sessionId, newName) => {
+    try {
+      await axios.post(`/sessions/${sessionId}/rename`, { new_name: newName });
+      // Refresh the sessions list to get the updated names
+      fetchSessions();
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      alert('Failed to rename session');
     }
-  } catch (error) {
-    console.error('Error renaming session:', error);
-    alert(error.response?.data?.error || 'Failed to rename session');
-  }
-};
+  };
 
   const fetchChatHistory = async () => {
     if (currentSession) {

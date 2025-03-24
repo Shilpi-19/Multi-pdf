@@ -43,7 +43,7 @@ Answer:
 
 def ask_question(session_id, question):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    # Replace colons with hyphens for Windows compatibility
+    # Always use the original session_id for the index path
     safe_session_id = session_id.replace(':', '-')
     index_path = f"faiss_index_{safe_session_id}"
     if not os.path.exists(index_path):

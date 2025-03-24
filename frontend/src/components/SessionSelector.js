@@ -1,29 +1,3 @@
-// import React from 'react';
-
-// function SessionSelector({ sessions, currentSession, onSelect, onCreate, onDelete }) {
-//   return (
-//     <div>
-//       <select
-//         value={currentSession || ''}
-//         onChange={(e) => onSelect(e.target.value)}
-//         disabled={!sessions.length}
-//       >
-//         <option value="">Select a session</option>
-//         {sessions.map((session) => (
-//           <option key={session} value={session}>
-//             {session}
-//           </option>
-//         ))}
-//       </select>
-//       <button onClick={onCreate}>Create New Session</button>
-//       {currentSession && <button onClick={onDelete}>Delete Session</button>}
-//     </div>
-//   );
-// }
-
-// export default SessionSelector;
-
-
 import React, { useState } from 'react';
 
 function SessionSelector({ sessions, currentSession, onSelect, onCreate, onDelete, onRename }) {
@@ -31,13 +5,14 @@ function SessionSelector({ sessions, currentSession, onSelect, onCreate, onDelet
   const [editedName, setEditedName] = useState('');
 
   const handleRenameClick = () => {
-    setEditedName(currentSession);
+    const currentSessionData = sessions.find(s => s.id === currentSession);
+    setEditedName(currentSessionData ? currentSessionData.name : '');
     setIsEditing(true);
   };
 
-  const handleSaveRename = async () => {
-    if (editedName && editedName !== currentSession) {
-      await onRename(currentSession, editedName);
+  const handleRenameSubmit = () => {
+    if (editedName.trim()) {
+      onRename(currentSession, editedName.trim());
       setIsEditing(false);
     }
   };
@@ -53,8 +28,8 @@ function SessionSelector({ sessions, currentSession, onSelect, onCreate, onDelet
           >
             <option value="">Select a session</option>
             {sessions.map((session) => (
-              <option key={session} value={session}>
-                {session}
+              <option key={session.id} value={session.id}>
+                {session.name}
               </option>
             ))}
           </select>
@@ -74,14 +49,19 @@ function SessionSelector({ sessions, currentSession, onSelect, onCreate, onDelet
             type="text"
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleRenameSubmit()}
             placeholder="Enter new name"
           />
-          <button onClick={handleSaveRename}>Save</button>
+          <button onClick={handleRenameSubmit}>Save</button>
           <button onClick={() => setIsEditing(false)}>Cancel</button>
         </div>
       )}
-      <button onClick={onCreate}>Create New Session</button>
-      {currentSession && <button onClick={onDelete}>Delete Session</button>}
+      <div className="session-buttons">
+        <button onClick={onCreate}>Create New Session</button>
+        {currentSession && (
+          <button onClick={() => onDelete(currentSession)}>Delete Session</button>
+        )}
+      </div>
     </div>
   );
 }
