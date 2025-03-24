@@ -1,0 +1,32 @@
+.session-selector {
+  margin-bottom: 20px;
+}
+
+.session-dropdown-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-button {
+  padding: 5px 10px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+}
+
+.session-rename-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.session-rename-container input {
+  padding: 5px;
+  flex: 1;
+}
+
+.session-rename-container button {
+  padding: 5px 10px;
+}

@@ -23,7 +23,7 @@ def list_sessions():
 
 @app.route('/sessions', methods=['POST'])
 def create_session():
-    session_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    session_id = datetime.now().strftime("%d-%m-%Y,%H:%M:%S")
     return jsonify({'session_id': session_id})
 
 @app.route('/sessions/<session_id>', methods=['DELETE'])
@@ -67,6 +67,32 @@ def get_messages_route(session_id):
 def get_pdfs_route(session_id):
     pdfs = get_pdf_uploads(session_id)
     return jsonify(pdfs)
+
+@app.route('/sessions/<session_id>/rename', methods=['PUT'])
+def rename_session(session_id):
+    new_name = request.json.get('new_name')
+    if not new_name:
+        return jsonify({'error': 'New name is required'}), 400
+    
+    # Add validation to prevent duplicate names
+    sessions = get_all_chat_history_ids()
+    if new_name in sessions:
+        return jsonify({'error': 'Session name already exists'}), 409
+    
+    # Rename the session (you'll need to implement this function)
+    try:
+        # Rename associated files/directories
+        old_index_path = f"faiss_index_{session_id.replace(':', '-')}"
+        new_index_path = f"faiss_index_{new_name}"
+        if os.path.exists(old_index_path):
+            os.rename(old_index_path, new_index_path)
+        
+        # Update any other session-related data
+        # ... (implement according to your storage mechanism)
+        
+        return jsonify({'success': True, 'new_name': new_name})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5001)

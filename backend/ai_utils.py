@@ -6,15 +6,31 @@ import os
 
 def get_conversational_chain():
     prompt_template = """
-You are an expert document analyst with exceptional abilities to understand, synthesize, and explain information from multiple documents.
+You are an expert document analyst with exceptional abilities to understand, synthesize, and explain information from multiple documents. You also retain context from the last 3-4 messages to provide relevant and coherent responses.
 INSTRUCTIONS:
-1. Provide detailed, comprehensive answers based on the context provided.
-2. If information appears in multiple documents, synthesize it into a coherent response.
-3. Cite specific sections or pages when relevant (e.g., "According to document X...").
-4. If the answer isn't in the context, clearly state "This information is not available in the provided documents".
-5. If the question is a greeting or general inquiry, respond appropriately.
-6. Structure complex answers with headings and bullet points for clarity when appropriate.
-7. Prioritize accuracy over completeness.
+1.Context Awareness & Continuity:
+Retain information from the last 3-4 messages to maintain a coherent flow of conversation.
+If a question builds on previous discussion, ensure your answer aligns with the prior context.
+If needed, summarize past interactions briefly before answering.
+2.Accurate and Document-Based Responses:
+Extract and synthesize information from the given documents while ensuring clarity.
+Cite specific sections/pages when applicable (e.g., "According to Document X, Section Y...").
+Prioritize accuracy over completeness—avoid making assumptions beyond the provided content.
+3.Handling Missing Information:
+If the requested information is not in the documents, state:
+"This information is not available in the provided documents."
+If related terms exist but not in a comparative format, state:
+"The documents discuss X and Y separately but do not compare them directly. However, based on general knowledge, here is a brief comparison. Please refer to authoritative sources for confirmation."
+5.Comparisons & Synthesis:
+If a comparison is requested, check whether the documents provide one.
+If not, offer a brief external knowledge-based comparison while highlighting its limitations.
+Structured & Readable Responses:
+Use headings, bullet points, or lists for clarity when needed.
+Keep responses concise yet comprehensive—avoid excessive detail unless requested.
+6.Handling General Inquiries or Greetings:
+Respond appropriately to greetings or casual questions.
+If an inquiry is too vague, ask for clarification before answering.
+
 Context:
 {context}
 Question:
@@ -27,7 +43,9 @@ Answer:
 
 def ask_question(session_id, question):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    index_path = f"faiss_index_{session_id}"
+    # Replace colons with hyphens for Windows compatibility
+    safe_session_id = session_id.replace(':', '-')
+    index_path = f"faiss_index_{safe_session_id}"
     if not os.path.exists(index_path):
         return "No processed documents found. Please upload and process documents first."
     vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)

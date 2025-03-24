@@ -49,6 +49,28 @@ function App() {
     }
   };
 
+  const renameSession = async (oldName, newName) => {
+  try {
+    const response = await axios.put(`/sessions/${oldName}/rename`, {
+      new_name: newName
+    });
+    
+    if (response.data.success) {
+      // Update the sessions list
+      setSessions(sessions.map(session => 
+        session === oldName ? newName : session
+      ));
+      // Update current session if it's the one being renamed
+      if (currentSession === oldName) {
+        setCurrentSession(newName);
+      }
+    }
+  } catch (error) {
+    console.error('Error renaming session:', error);
+    alert(error.response?.data?.error || 'Failed to rename session');
+  }
+};
+
   const fetchChatHistory = async () => {
     if (currentSession) {
       const response = await axios.get(`/sessions/${currentSession}/messages`);
@@ -65,8 +87,7 @@ function App() {
 
   return (
     <div className="app">
-      <h1>📚 Advanced PDF Chat Assistant</h1>
-      <p>Upload PDFs and chat with an AI assistant about their content.</p>
+      <h1>📚 PDF Chat Assistant</h1>
       <div className="container">
         <div className="sidebar">
           <h2>Session Management</h2>
@@ -76,25 +97,39 @@ function App() {
             onSelect={selectSession}
             onCreate={createNewSession}
             onDelete={deleteSession}
+            onRename={renameSession}
           />
           {currentSession && (
             <>
               <DocumentUploader sessionId={currentSession} onUploadSuccess={fetchUploadedPdfs} />
-              <h3>Uploaded Documents</h3>
-              {uploadedPdfs.length > 0 ? (
-                uploadedPdfs.map((pdf, index) => <p key={index}>📄 {pdf}</p>)
-              ) : (
-                <p>No documents uploaded yet.</p>
-              )}
+              <div className="uploaded-docs">
+                <h3>Uploaded Documents</h3>
+                {uploadedPdfs.length > 0 ? (
+                  uploadedPdfs.map((pdf, index) => (
+                    <p key={index}>
+                      <span>📄</span>
+                      <span>{pdf}</span>
+                    </p>
+                  ))
+                ) : (
+                  <p>No documents uploaded yet</p>
+                )}
+              </div>
             </>
           )}
         </div>
         <div className="main">
           <h2>Chat with Your Documents</h2>
           {currentSession ? (
-            <ChatInterface sessionId={currentSession} chatHistory={chatHistory} onNewMessage={fetchChatHistory} />
+            <ChatInterface 
+              sessionId={currentSession} 
+              chatHistory={chatHistory} 
+              onNewMessage={fetchChatHistory} 
+            />
           ) : (
-            <p>Please select or create a session to start chatting.</p>
+            <div className="empty-state">
+              <p>👈 Please select or create a session to start chatting</p>
+            </div>
           )}
         </div>
       </div>

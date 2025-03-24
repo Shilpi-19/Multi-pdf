@@ -22,7 +22,9 @@ def get_text_chunks(text):
 
 def create_vector_store(text_chunks, session_id):
     embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
-    index_path = f"faiss_index_{session_id}"
+    # Replace colons with hyphens for Windows compatibility
+    safe_session_id = session_id.replace(':', '-')
+    index_path = f"faiss_index_{safe_session_id}"
     if os.path.exists(index_path):
         vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
         vector_store.add_texts(text_chunks)
